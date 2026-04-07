@@ -17,6 +17,7 @@ const progressText = document.getElementById('progress-text');
 const logsContainer = document.getElementById('logs');
 const downloadOverlay = document.getElementById('download-overlay');
 const downloadMsg = document.getElementById('download-msg');
+const checkAlpha = document.getElementById('check-alpha');
 
 function log(msg, type = 'info') {
     const entry = document.createElement('div');
@@ -105,20 +106,33 @@ btnConvert.addEventListener('click', async () => {
             // Write to virtual filesystem
             ffmpeg.FS('writeFile', fileName, await fetchFile(file));
 
-            // Try Stream Copy first
-            log(`Attempting fast stream copy for ${fileName}...`);
-            // v0.11 run command
-            await ffmpeg.run('-i', fileName, '-c:v', 'copy', '-c:a', 'aac', outputName);
+            const useAlpha = checkAlpha.checked;
+            const finalOutputName = useAlpha ? 
+                fileName.substring(0, fileName.lastIndexOf('.')) + '_alpha.mov' : 
+                outputName;
+
+            log(`Processing: ${fileName} (${i + 1}/${selectedFiles.length}) ${useAlpha ? '[ALPHA MODE]' : ''}`);
+
+            if (useAlpha) {
+                log(`Encoding ProRes Proxy with Alpha for ${fileName}...`);
+                // -c:v prores_ks -profile:v 0 is ProRes Proxy. 
+                // We use prores_ks because it handles alpha properly.
+                await ffmpeg.run('-i', fileName, '-c:v', 'prores_ks', '-profile:v', '0', '-c:a', 'pcm_s16le', finalOutputName);
+            } else {
+                // Try Stream Copy first for standard MP4
+                log(`Attempting fast stream copy for ${fileName}...`);
+                await ffmpeg.run('-i', fileName, '-c:v', 'copy', '-c:a', 'aac', finalOutputName);
+            }
 
             // Read result
-            const data = ffmpeg.FS('readFile', outputName);
+            const data = ffmpeg.FS('readFile', finalOutputName);
             
             // Trigger automatic download
-            const blob = new Blob([data.buffer], { type: 'video/mp4' });
+            const blob = new Blob([data.buffer], { type: useAlpha ? 'video/quicktime' : 'video/mp4' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = outputName;
+            a.download = finalOutputName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -128,7 +142,7 @@ btnConvert.addEventListener('click', async () => {
             
             // Clean up virtual FS
             ffmpeg.FS('unlink', fileName);
-            ffmpeg.FS('unlink', outputName);
+            ffmpeg.FS('unlink', finalOutputName);
 
         } catch (err) {
             log(`Error converting ${fileName}: ${err.message}`, 'error');

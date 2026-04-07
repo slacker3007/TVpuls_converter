@@ -28,41 +28,52 @@ def select_folder():
     result = subprocess.run(["python", "-c", code], stdout=subprocess.PIPE, text=True)
     return result.stdout.strip()
 
-def convert_file(input_path, output_filename):
-    # Try copying first
-    cmd_copy = [
-        'ffmpeg', '-y', '-i', input_path, 
-        '-c:v', 'copy', '-c:a', 'copy', 
-        output_filename
-    ]
+def convert_file(input_path, output_filename, use_alpha=False):
+    if use_alpha:
+        # ProRes Proxy with Alpha
+        cmd = [
+            'ffmpeg', '-y', '-i', input_path, 
+            '-c:v', 'prores_ks', '-profile:v', '0', 
+            '-c:a', 'pcm_s16le', 
+            output_filename
+        ]
+        eel.log_message(f"Encoding ProRes Proxy (Alpha) for {os.path.basename(input_path)}...")
+    else:
+        # Standard MP4 logic
+        # Try copying first
+        cmd_copy = [
+            'ffmpeg', '-y', '-i', input_path, 
+            '-c:v', 'copy', '-c:a', 'copy', 
+            output_filename
+        ]
+        
+        eel.log_message(f"Trying to copy stream for {os.path.basename(input_path)}...")
+        
+        # Run with subprocess
+        result = subprocess.run(cmd_copy, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        if result.returncode == 0:
+            eel.log_message(f"Successfully copied to {os.path.basename(output_filename)}")
+            return True
+        
+        # If copy fails, fallback to encoding
+        eel.log_message(f"Copy failed. Falling back to h264 encoding for {os.path.basename(input_path)}...")
+        cmd = [
+            'ffmpeg', '-y', '-i', input_path, 
+            '-c:v', 'libx264', '-c:a', 'aac', 
+            output_filename
+        ]
     
-    eel.log_message(f"Trying to copy stream for {os.path.basename(input_path)}...")
-    
-    # Run with subprocess
-    result = subprocess.run(cmd_copy, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode == 0:
-        eel.log_message(f"Successfully copied to {os.path.basename(output_filename)}")
-        return True
-    
-    # If copy fails, fallback to encoding
-    eel.log_message(f"Copy failed. Falling back to h264 encoding for {os.path.basename(input_path)}...")
-    cmd_encode = [
-        'ffmpeg', '-y', '-i', input_path, 
-        '-c:v', 'libx264', '-c:a', 'aac', 
-        output_filename
-    ]
-    
-    result = subprocess.run(cmd_encode, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if result.returncode == 0:
-        eel.log_message(f"Successfully encoded to {os.path.basename(output_filename)}")
+        eel.log_message(f"Successfully processed {os.path.basename(output_filename)}")
         return True
     else:
         eel.log_message(f"Error converting {os.path.basename(input_path)}: {result.stderr.decode('utf-8', errors='ignore')}")
         return False
 
 @eel.expose
-def start_conversion(target_path, is_folder):
+def start_conversion(target_path, is_folder, use_alpha=False):
     def run_conversion():
         try:
             if is_folder:
@@ -88,14 +99,16 @@ def start_conversion(target_path, is_folder):
                 name, _ = os.path.splitext(base_name)
                 
                 # Output filename
-                output_filename = os.path.join(dir_name, f"{name}_converted.mp4")
+                ext = ".mov" if use_alpha else ".mp4"
+                suffix = "_alpha" if use_alpha else "_converted"
+                output_filename = os.path.join(dir_name, f"{name}{suffix}{ext}")
                 
                 # Check if output already exists and avoid infinite loop if converting in same folder
                 if input_path == output_filename:
-                    output_filename = os.path.join(dir_name, f"{name}_converted_2.mp4")
+                    output_filename = os.path.join(dir_name, f"{name}{suffix}_2{ext}")
                 
                 eel.update_progress(index + 1, len(files_to_convert))
-                convert_file(input_path, output_filename)
+                convert_file(input_path, output_filename, use_alpha)
                 
             eel.log_message("Conversion process finished!")
         except Exception as e:

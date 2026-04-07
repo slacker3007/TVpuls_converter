@@ -170,6 +170,72 @@ header {
     font-size: 0.9rem;
 }
 
+/* Settings & Toggles */
+.settings-area {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1.25rem;
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+}
+
+.toggle-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 1.25rem;
+    user-select: none;
+}
+
+.toggle-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.toggle-text strong {
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.toggle-text span {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.toggle-slider {
+    position: relative;
+    width: 48px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .toggle-slider {
+    background: var(--accent-primary);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+input {
+    display: none;
+}
+
 /* Target Display */
 .target-display {
     background: rgba(0, 0, 0, 0.2);
