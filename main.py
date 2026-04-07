@@ -5,7 +5,7 @@ import os
 import subprocess
 import threading
 
-eel.init('web')
+eel.init('.')
 
 def get_video_files(folder_path):
     video_extensions = ('.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.mpg', '.mpeg')

@@ -5,7 +5,7 @@ import threading
 import time
 
 PORT = 8000
-DIRECTORY = "web"
+DIRECTORY = "."
 
 class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
