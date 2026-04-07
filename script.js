@@ -85,6 +85,19 @@ inputFolder.addEventListener('change', (e) => {
 });
 
 btnConvert.addEventListener('click', async () => {
+    const useAlpha = checkAlpha.checked;
+
+    // --- LOCAL MODE (Python/Eel) ---
+    if (window.eel && localPath) {
+        btnConvert.disabled = true;
+        btnConvert.textContent = 'Processing...';
+        progressArea.style.display = 'flex';
+        log(`Transferred to system engine: ${localPath} ${useAlpha ? '[ALPHA MODE]' : ''}`);
+        eel.start_conversion(localPath, isLocalFolder, useAlpha);
+        return; // Skip browser-based logic
+    }
+
+    // --- CLOUD MODE (WASM) ---
     if (selectedFiles.length === 0) return;
 
     btnConvert.disabled = true;
@@ -174,3 +187,67 @@ btnConvert.addEventListener('click', async () => {
     downloadMsg.textContent = `Processed ${selectedFiles.length} file(s). Checks downloads!`;
     downloadOverlay.style.display = 'flex';
 });
+
+// --- EEL CALLBACKS (For Local Mode) ---
+if (window.eel) {
+    eel.expose(log_message);
+    function log_message(msg) {
+        log(msg);
+    }
+
+    eel.expose(update_progress);
+    function update_progress(current, total) {
+        progressArea.style.display = 'flex';
+        progressBar.style.width = `${(current / total) * 100}%`;
+        progressText.textContent = `Processing ${current} of ${total}...`;
+    }
+
+    eel.expose(conversion_finished);
+    function conversion_finished() {
+        btnConvert.disabled = false;
+        btnConvert.textContent = 'Start Conversion';
+        downloadMsg.textContent = "Conversion complete! Files saved in their original folders.";
+        downloadOverlay.style.display = 'flex';
+    }
+}
+
+// Override selection triggers for Local Mode
+if (window.eel) {
+    btnFileTrigger.onclick = async (e) => {
+        e.preventDefault();
+        const path = await eel.select_file()();
+        if (path) {
+            localPath = path;
+            isLocalFolder = false;
+            targetCount.textContent = "1";
+            targetDisplay.style.display = 'block';
+            btnConvert.disabled = false;
+            btnFileTrigger.classList.add('active');
+            btnFolderTrigger.classList.remove('active');
+            log(`Selected local file: ${path}`);
+        }
+    };
+
+    btnFolderTrigger.onclick = async (e) => {
+        e.preventDefault();
+        const path = await eel.select_folder()();
+        if (path) {
+            localPath = path;
+            isLocalFolder = true;
+            targetCount.textContent = "Folder Selected";
+            targetDisplay.style.display = 'block';
+            btnConvert.disabled = false;
+            btnFolderTrigger.classList.add('active');
+            btnFileTrigger.classList.remove('active');
+            log(`Selected local folder: ${path}`);
+        }
+    };
+}
+
+let localPath = null;
+let isLocalFolder = false;
+
+// Override Conversion Button for Local Mode
+const originalBtnConvertClick = btnConvert.onclick; 
+// Actually we used addEventListener, so we should check inside the listener...
+// Let's modify the listener at the top of the file in the next step or just use a flag.
