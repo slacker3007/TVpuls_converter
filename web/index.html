@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TVpuls Converter (Cloud)</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Service Worker for COOP/COEP Headers (Critical for GitHub Pages) -->
+    <script src="coi-serviceworker.js" data-reload></script>
+
+    <!-- FFmpeg v0.11 (More stable for single-page apps) -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+</head>
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="app-container glass-panel">
+        <header>
+            <h1 class="gradient-text">TVpuls Converter</h1>
+            <p class="subtitle">Convert any video to MP4 directly in your browser.</p>
+        </header>
+
+        <div class="selection-area">
+            <div class="card" id="btn-file-trigger">
+                <div class="icon">📄</div>
+                <h3>Single File</h3>
+                <p>Convert one video</p>
+                <input type="file" id="input-file" accept="video/*" style="display: none;">
+            </div>
+            <div class="card" id="btn-folder-trigger">
+                <div class="icon">📁</div>
+                <h3>Folder</h3>
+                <p>Convert multiple videos</p>
+                <input type="file" id="input-folder" webkitdirectory directory multiple style="display: none;">
+            </div>
+        </div>
+
+        <div class="target-display" id="target-display" style="display: none;">
+            <p>Ready to process: <span id="target-count">0</span> file(s)</p>
+        </div>
+
+        <div class="action-area">
+            <button class="primary-btn" id="btn-convert" disabled>Start Conversion</button>
+        </div>
+
+        <div class="progress-area" id="progress-area" style="display: none;">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <p id="progress-text">Initializing FFmpeg...</p>
+        </div>
+
+        <div class="log-area glass-panel" id="log-area">
+            <div class="log-header">Process Logs</div>
+            <div class="logs" id="logs"></div>
+        </div>
+    </div>
+
+    <!-- Download modal/overlay for finished files -->
+    <div id="download-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+        <div class="glass-panel" style="padding: 2rem; text-align: center; max-width: 400px;">
+            <h2 style="margin-bottom: 1rem;">Conversion Complete!</h2>
+            <p id="download-msg" style="margin-bottom: 1.5rem; color: var(--text-secondary);"></p>
+            <button class="primary-btn" onclick="document.getElementById('download-overlay').style.display='none'">Awesome</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
