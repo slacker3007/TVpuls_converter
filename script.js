@@ -34,11 +34,15 @@ async function initFFmpeg() {
     
     try {
         log("Booting conversion engine (v0.11)...");
+
+        // On GitHub Pages, we need to be very explicit about the paths.
+        // We'll try to load from the local repo first, then fallback to CDN.
+        const baseURL = window.location.origin + window.location.pathname.replace(/\/$/, '');
         
         ffmpeg = createFFmpeg({ 
             log: true,
-            corePath: 'ffmpeg-core.js',
-            workerPath: 'ffmpeg-core.worker.js'
+            corePath: `${baseURL}/ffmpeg-core.js`,
+            workerPath: `${baseURL}/ffmpeg-core.worker.js`
         });
 
         ffmpeg.setLogger(({ message }) => {
